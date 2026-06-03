@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room</title>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="chat-container">
+
+        <!-- Top Bar -->
+        <div class="top-bar">
+
+            <div>
+                Room:
+                <span id="roomCodeDisplay">
+                    Loading...
+                </span>
+            </div>
+
+            <button id="leaveRoom">
+                Leave Room
+            </button>
+
+        </div>
+
+        <!-- Main Area -->
+        <div class="main-area">
+
+            <!-- Users -->
+            <div class="users-panel">
+
+                <h3>Online Users</h3>
+
+                <div id="usersList">
+
+                </div>
+
+            </div>
+
+            <!-- Chat -->
+            <div class="chat-panel">
+
+                <div id="roomInfo"></div>
+
+                <div id="messages"></div>
+
+                <div class="message-input">
+
+                    <input
+                        type="text"
+                        id="messageBox"
+                        placeholder="Type a message..."
+                    >
+
+                    <button id="sendBtn">
+                        Send
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script type="module" src="js/chat.js"></script>
+
+</body>
+</html>
