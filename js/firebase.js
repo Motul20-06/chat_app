@@ -4,8 +4,11 @@ from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getFirestore }
 from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
+import { getStorage }
+from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
+
 const firebaseConfig = {
-    apiKey: "AIzaSyDcFfqH2g_reAvnJkYtMPdh9jWjsw8trvM",
+    apiKey: "YOUR_API_KEY",
     authDomain: "learn-chat-cb8f8.firebaseapp.com",
     projectId: "learn-chat-cb8f8",
     storageBucket: "learn-chat-cb8f8.firebasestorage.app",
@@ -13,10 +16,10 @@ const firebaseConfig = {
     appId: "1:513936894097:web:aef4763c71f78b7e69b730"
 };
 
-const app =
-    initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 
-const db =
-    getFirestore(app);
+const db = getFirestore(app);
 
-export { db };
+const storage = getStorage(app);
+
+export { db, storage };

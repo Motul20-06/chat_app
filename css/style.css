@@ -6,30 +6,27 @@
 
 body {
     font-family: Arial, sans-serif;
-
     background: #111827;
-
     color: white;
-
     min-height: 100vh;
-
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
 }
+
+/* =========================
+   HOME PAGE
+========================= */
 
 .container {
     width: 100%;
+    min-height: 100vh;
 
     display: flex;
-
     justify-content: center;
+    align-items: center;
 }
 
 .card {
     width: 400px;
+    max-width: 95%;
 
     background: #1f2937;
 
@@ -38,9 +35,7 @@ body {
     border-radius: 12px;
 
     display: flex;
-
     flex-direction: column;
-
     gap: 15px;
 
     box-shadow: 0 0 20px rgba(0,0,0,.3);
@@ -52,23 +47,15 @@ h1 {
 
 .subtitle {
     text-align: center;
-
     color: #9ca3af;
-
-    margin-bottom: 10px;
 }
 
 input {
     padding: 12px;
-
     border: none;
-
     border-radius: 8px;
-
     background: #374151;
-
     color: white;
-
     font-size: 16px;
 }
 
@@ -78,21 +65,18 @@ input:focus {
 
 button {
     padding: 12px;
-
     border: none;
-
     border-radius: 8px;
-
     cursor: pointer;
 
     font-size: 16px;
-
     font-weight: bold;
+
+    transition: 0.2s;
 }
 
 #createRoom {
     background: #2563eb;
-
     color: white;
 }
 
@@ -102,7 +86,6 @@ button {
 
 #joinRoom {
     background: #10b981;
-
     color: white;
 }
 
@@ -110,102 +93,72 @@ button {
     background: #059669;
 }
 
+/* =========================
+   CHAT PAGE
+========================= */
+
 .chat-container {
-    width: 95%;
+    width: min(1200px, 95%);
     height: 95vh;
+
+    margin: auto;
 
     display: flex;
     flex-direction: column;
+
+    padding: 10px;
 }
 
 .top-bar {
     background: #1f2937;
 
+    border-radius: 12px;
+
     padding: 15px;
 
-    border-radius: 10px;
-
     display: flex;
-
     justify-content: space-between;
-
     align-items: center;
 
     margin-bottom: 10px;
+}
+
+#leaveRoom {
+    background: #dc2626;
+    color: white;
+}
+
+#leaveRoom:hover {
+    background: #b91c1c;
 }
 
 .main-area {
     flex: 1;
 
     display: flex;
-
     gap: 10px;
+
+    min-height: 0;
 }
+
+/* =========================
+   USERS PANEL
+========================= */
 
 .users-panel {
     width: 250px;
 
     background: #1f2937;
 
-    border-radius: 10px;
+    border-radius: 12px;
 
     padding: 15px;
 
     overflow-y: auto;
 }
 
-.chat-panel {
-    flex: 1;
-
-    background: #1f2937;
-
-    border-radius: 10px;
-
-    display: flex;
-
-    flex-direction: column;
-}
-
-#messages {
-    flex: 1;
-
-    overflow-y: auto;
-
-    padding: 15px;
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 10px;
-}
-
-.message {
-    background: #374151;
-
-    padding: 10px;
-
-    border-radius: 8px;
-}
-
-.message-name {
-    font-weight: bold;
-
-    margin-bottom: 5px;
-}
-
-.message-input {
-    display: flex;
-
-    gap: 10px;
-
-    padding: 15px;
-
-    border-top: 1px solid #374151;
-}
-
-.message-input input {
-    flex: 1;
+.users-panel h3 {
+    margin-bottom: 15px;
 }
 
 .user-item {
@@ -218,12 +171,179 @@ button {
     margin-bottom: 10px;
 }
 
-#leaveRoom {
-    background: #dc2626;
+/* =========================
+   CHAT PANEL
+========================= */
 
+.chat-panel {
+    flex: 1;
+
+    background: #1f2937;
+
+    border-radius: 12px;
+
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+}
+
+#roomInfo {
+    padding: 15px;
+    border-bottom: 1px solid #374151;
+}
+
+#messages {
+    flex: 1;
+
+    overflow-y: auto;
+
+    padding: 15px;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+/* =========================
+   MESSAGE
+========================= */
+
+.message {
+    background: #374151;
+
+    padding: 10px;
+
+    border-radius: 8px;
+
+    word-break: break-word;
+}
+
+.message-name {
+    font-weight: bold;
+
+    margin-bottom: 5px;
+
+    color: #93c5fd;
+}
+
+.message img {
+    display: block;
+
+    max-width: 100%;
+    max-height: 300px;
+
+    border-radius: 8px;
+
+    margin-top: 8px;
+}
+
+/* =========================
+   INPUT AREA
+========================= */
+
+.message-input {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 15px;
+
+    border-top: 1px solid #374151;
+}
+
+#messageBox {
+    flex: 1;
+}
+
+#fileBtn {
+    width: 50px;
+    min-width: 50px;
+
+    background: #4b5563;
+    color: white;
+
+    font-size: 20px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#fileBtn:hover {
+    background: #6b7280;
+}
+
+#sendBtn {
+    background: #2563eb;
     color: white;
 }
 
-#leaveRoom:hover {
-    background: #b91c1c;
+#sendBtn:hover {
+    background: #1d4ed8;
+}
+
+/* =========================
+   FILE LINKS
+========================= */
+
+.message a {
+    color: #60a5fa;
+    text-decoration: none;
+}
+
+.message a:hover {
+    text-decoration: underline;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 768px) {
+
+    .chat-container {
+        width: 100%;
+        height: 100vh;
+        padding: 5px;
+    }
+
+    .top-bar {
+        flex-direction: column;
+        gap: 10px;
+
+        text-align: center;
+    }
+
+    .main-area {
+        flex-direction: column;
+    }
+
+    .users-panel {
+        width: 100%;
+
+        height: 140px;
+
+        flex-shrink: 0;
+    }
+
+    .message-input {
+        gap: 5px;
+        padding: 10px;
+    }
+
+    #fileBtn {
+        width: 45px;
+        min-width: 45px;
+    }
+
+    #sendBtn {
+        padding: 12px 15px;
+    }
+
+    .message img {
+        max-height: 200px;
+    }
 }

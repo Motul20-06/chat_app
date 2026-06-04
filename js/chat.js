@@ -1,4 +1,4 @@
-import { db } from "./firebase.js";
+import { db,storage  } from "./firebase.js";
 
 import {
     doc,
@@ -11,9 +11,16 @@ import {
     serverTimestamp,
     deleteDoc,
     query,        
-    orderBy       
+    orderBy,    
 }
 from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+import {
+    ref,
+    uploadBytes,
+    getDownloadURL
+}
+from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
 
 
 // ===============================
@@ -27,6 +34,8 @@ let currentUserDocId = null;
 
 const username = sessionStorage.getItem("username");
 const roomId = sessionStorage.getItem("roomId");
+const fileBtn = document.getElementById("fileBtn");
+const fileInput = document.getElementById("fileInput");
 
 // IMPORTANT:
 // isHost is used ONLY to decide who creates the room document.
@@ -158,10 +167,26 @@ onSnapshot(messagesQuery, (snapshot) => {
     messages.innerHTML = "";
 
     snapshot.forEach((docSnap) => {
-        const msg = docSnap.data();
-        addMessage(msg.username, msg.text);
-    });
 
+        const msg = docSnap.data();
+
+        if (msg.type === "file") {
+
+            addFileMessage(
+                msg.username,
+                msg.fileName,
+                msg.fileUrl,
+                msg.fileType
+            );
+
+        } else {
+
+            addMessage(
+                msg.username,
+                msg.text
+            );
+        }
+    });
     // IMPORTANT:
     // Auto-scroll ensures newest message is always visible
     messages.scrollTop = messages.scrollHeight;
@@ -193,6 +218,56 @@ sendBtn.onclick = async () => {
 };
 
 
+fileBtn.onclick = () => {
+    fileInput.click();
+};
+
+fileInput.addEventListener("change", async (e) => {
+
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    // 5 MB limit
+    if (file.size > 5 * 1024 * 1024) {
+        alert("Maximum file size is 5 MB");
+        return;
+    }
+
+    try {
+
+        const fileRef = ref(
+            storage,
+            `rooms/${roomId}/${Date.now()}_${file.name}`
+        );
+
+        await uploadBytes(
+            fileRef,
+            file
+        );
+
+        const fileUrl =
+            await getDownloadURL(fileRef);
+
+        await addDoc(messagesRef, {
+            type: "file",
+            username,
+            fileName: file.name,
+            fileType: file.type,
+            fileUrl,
+            createdAt: Date.now()
+        });
+
+    } catch (err) {
+
+        console.error(err);
+        alert("Upload failed");
+    }
+
+    fileInput.value = "";
+});
+
+
 // ===============================
 // ENTER KEY SUPPORT
 // ===============================
@@ -215,39 +290,42 @@ leaveRoomBtn.onclick = async () => {
 
     try {
 
-        // STEP 1:
-        // Remove THIS user from Firestore users collection
-        // This is what makes user "disappear" for everyone else
         if (currentUserDocId) {
             await deleteDoc(
-                doc(db, "rooms", roomId, "users", currentUserDocId)
+                doc(
+                    db,
+                    "rooms",
+                    roomId,
+                    "users",
+                    currentUserDocId
+                )
             );
         }
 
-        // STEP 2:
-        // Small delay to allow Firestore to sync deletion
-        // (Firestore is eventually consistent)
-        await new Promise(r => setTimeout(r, 300));
-
-        // STEP 3:
-        // Check if ANY users are still inside the room
         const snapshot = await getDocs(usersRef);
 
-        // IMPORTANT:
-        // If empty → room is no longer needed → delete it
-        if (snapshot.empty) {
+        if (snapshot.size === 0) {
+
+            const messagesSnapshot =
+                await getDocs(messagesRef);
+
+            for (const msg of messagesSnapshot.docs) {
+                await deleteDoc(msg.ref);
+            }
+
             await deleteDoc(roomRef);
-            console.log("Room deleted (last user left)");
+
+            console.log(
+                "Room + messages deleted"
+            );
         }
 
     } catch (err) {
-        console.error("Leave error:", err);
+        console.error(err);
     }
 
-    // Cleanup local session
     sessionStorage.clear();
 
-    // Redirect back to home
     window.location.href = "index.html";
 };
 
@@ -277,3 +355,76 @@ function addMessage(sender, text) {
 
     messages.appendChild(div);
 }
+
+
+function addFileMessage(
+    sender,
+    fileName,
+    fileUrl,
+    fileType
+) {
+
+    const div = document.createElement("div");
+
+    div.className = "message";
+
+    if (
+        fileType &&
+        fileType.startsWith("image/")
+    ) {
+
+        div.innerHTML = `
+            <div class="message-name">
+                ${sender}
+            </div>
+
+            <img
+                src="${fileUrl}"
+                alt="${fileName}"
+                style="
+                    max-width:250px;
+                    border-radius:8px;
+                    margin-top:5px;
+                "
+            >
+        `;
+
+    } else {
+
+        div.innerHTML = `
+            <div class="message-name">
+                ${sender}
+            </div>
+
+            <a
+                href="${fileUrl}"
+                target="_blank"
+            >
+                📎 ${fileName}
+            </a>
+        `;
+    }
+
+    messages.appendChild(div);
+}
+
+setInterval(async () => {
+
+    if (!currentUserDocId) return;
+
+    await setDoc(
+        doc(
+            db,
+            "rooms",
+            roomId,
+            "users",
+            currentUserDocId
+        ),
+        {
+            username,
+            lastSeen: Date.now()
+        },
+        { merge:true }
+    );
+
+}, 20000);
