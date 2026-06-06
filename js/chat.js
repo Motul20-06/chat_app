@@ -30,7 +30,7 @@ from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
 // IMPORTANT:
 // sessionStorage is your only "state manager" between pages.
 // If any of these are null → user refreshed or entered manually → redirect.
-let currentUserDocId = null;
+// let currentUserDocId = null;
 
 const username = sessionStorage.getItem("username");
 const roomId = sessionStorage.getItem("roomId");
@@ -59,7 +59,8 @@ const sendBtn = document.getElementById("sendBtn");
 const messageBox = document.getElementById("messageBox");
 const leaveRoomBtn = document.getElementById("leaveRoom");
 const roomInfo = document.getElementById("roomInfo");
-
+// Prevent heartbeat from recreating user after leaving
+let leavingRoom = false;
 
 // ===============================
 // DISPLAY INFO
@@ -83,8 +84,16 @@ ${isHost ? " (Host)" : ""}
 // IMPORTANT:
 // These are reusable references used throughout the app.
 // Keeps code clean and prevents repeated path building.
+let userId = localStorage.getItem("userId");
+
+if (!userId) {
+    userId = crypto.randomUUID();
+    localStorage.setItem("userId", userId);
+}
+
 const roomRef = doc(db, "rooms", roomId);
 const usersRef = collection(db, "rooms", roomId, "users");
+const currentUserRef = doc(db, "rooms", roomId, "users", userId);
 const messagesRef = collection(db, "rooms", roomId, "messages");
 
 const messagesQuery = query(
@@ -102,15 +111,17 @@ async function initRoom() {
     // Host is responsible for creating the room document
     if (isHost) {
 
-        await setDoc(roomRef, {
-            host: username,
-            createdAt: Date.now(),
+        const roomSnap = await getDoc(roomRef);
 
-            // IMPORTANT:
-            // used later for cleanup (future feature)
-            lastActivity: Date.now()
-        });
+        if (!roomSnap.exists()) {
 
+            await setDoc(roomRef, {
+                host: username,
+                createdAt: Date.now(),
+                lastActivity: Date.now()
+            });
+
+        }
     } else {
 
         // JOINERS:
@@ -127,12 +138,46 @@ async function initRoom() {
     // IMPORTANT:
     // Every user gets their own document in /users collection
     // This is how we track "online users"
-    const userDoc = await addDoc(usersRef, {
-        username,
-        joinedAt: serverTimestamp()
-    });
+    // const userDoc = await addDoc(usersRef, {
+    //     username,
+    //     joinedAt: serverTimestamp()
+    // });
+    // await setDoc(
+    //     currentUserRef,
+    //     {
+    //         username,
+    //         joinedAt: serverTimestamp(),
+    //         lastSeen: Date.now()
+    //     },
+    //     { merge: true }
+    // );
+    // currentUserDocId = userDoc.id;
 
-    currentUserDocId = userDoc.id;
+    const existingUser = await getDoc(currentUserRef);
+
+    if (!existingUser.exists()) {
+
+        await setDoc(currentUserRef,{
+            username,
+            joinedAt: serverTimestamp(),
+            lastSeen: Date.now()
+        });
+
+    } else {
+
+        await setDoc(
+            currentUserRef,
+            {
+                username,
+                lastSeen: Date.now()
+            },
+            { merge:true }
+        );
+    }
+
+    // currentUserDocId = userId;
+
+   
 }
 
 initRoom();
@@ -146,10 +191,27 @@ initRoom();
 // onSnapshot = real-time sync (Firestore pushes updates automatically)
 onSnapshot(usersRef, (snapshot) => {
 
+    // usersList.innerHTML = "";
+
+    // snapshot.forEach((docSnap) => {
+    //     const user = docSnap.data();
+    //     addUser(user.username);
+    // });
     usersList.innerHTML = "";
 
+    const now = Date.now();
+
     snapshot.forEach((docSnap) => {
+
         const user = docSnap.data();
+
+        if (
+            user.lastSeen &&
+            now - user.lastSeen > 60000
+        ) {
+            return;
+        }
+
         addUser(user.username);
     });
 
@@ -157,6 +219,28 @@ onSnapshot(usersRef, (snapshot) => {
     // Firestore handles sync automatically
 });
 
+async function cleanupInactiveUsers() {
+
+    const now = Date.now();
+
+    const snapshot = await getDocs(usersRef);
+
+    for (const userDoc of snapshot.docs) {
+
+        const user = userDoc.data();
+
+        if (
+            user.lastSeen &&
+            now - user.lastSeen > 60000
+        ) {
+            await deleteDoc(userDoc.ref);
+        }
+    }
+}
+
+if (isHost) {
+    setInterval(cleanupInactiveUsers, 60000);
+}
 
 // ===============================
 // MESSAGES REAL-TIME LISTENER
@@ -260,8 +344,12 @@ fileInput.addEventListener("change", async (e) => {
 
     } catch (err) {
 
-        console.error(err);
-        alert("Upload failed");
+        console.error("Upload error:", err);
+
+        alert(
+            err.message ||
+            "Upload failed"
+        );
     }
 
     fileInput.value = "";
@@ -290,17 +378,13 @@ leaveRoomBtn.onclick = async () => {
 
     try {
 
-        if (currentUserDocId) {
-            await deleteDoc(
-                doc(
-                    db,
-                    "rooms",
-                    roomId,
-                    "users",
-                    currentUserDocId
-                )
-            );
-        }
+        leavingRoom = true;
+
+        // Remove this user from the room
+        await deleteDoc(currentUserRef);
+
+        // Remove inactive users before checking room size
+        await cleanupInactiveUsers();
 
         const snapshot = await getDocs(usersRef);
 
@@ -408,23 +492,45 @@ function addFileMessage(
     messages.appendChild(div);
 }
 
+// setInterval(async () => {
+
+//     if (!currentUserDocId) return;
+
+//     await setDoc(
+//         doc(
+//             db,
+//             "rooms",
+//             roomId,
+//             "users",
+//             currentUserDocId
+//         ),
+//         {
+//             username,
+//             lastSeen: Date.now()
+//         },
+//         { merge:true }
+//     );
+
+// }, 20000);
 setInterval(async () => {
 
-    if (!currentUserDocId) return;
+    if (leavingRoom) return;
 
-    await setDoc(
-        doc(
-            db,
-            "rooms",
-            roomId,
-            "users",
-            currentUserDocId
-        ),
-        {
-            username,
-            lastSeen: Date.now()
-        },
-        { merge:true }
-    );
+    try {
+
+        await setDoc(
+            currentUserRef,
+            {
+                username,
+                lastSeen: Date.now()
+            },
+            { merge: true }
+        );
+
+    } catch (err) {
+
+        console.error("Heartbeat error:", err);
+
+    }
 
 }, 20000);
